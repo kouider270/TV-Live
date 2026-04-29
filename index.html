@@ -12,14 +12,25 @@
         
         /* تأثيرات الإخفاء والإظهار */
         .header, .sidebar, .ch-list {
-            transition: all 0.4s ease-in-out;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             opacity: 1;
         }
 
         /* الوضع ملء الشاشة: إخفاء القوائم */
-        body.full-screen-mode .header { margin-top: -60px; opacity: 0; visibility: hidden; }
-        body.full-screen-mode .sidebar { margin-right: -110px; opacity: 0; visibility: hidden; }
-        body.full-screen-mode .ch-list { margin-right: -270px; opacity: 0; visibility: hidden; }
+        body.full-screen-mode .header { transform: translateY(-100%); opacity: 0; }
+        body.full-screen-mode .sidebar { transform: translateX(100%); opacity: 0; }
+        body.full-screen-mode .ch-list { transform: translateX(100%); opacity: 0; }
+
+        /* منطقة التحسس الشفافة على جهة اليمين */
+        .hover-trigger {
+            position: fixed;
+            right: 0;
+            top: 0;
+            width: 20px; /* عرض المنطقة الحساسة */
+            height: 100%;
+            z-index: 9999;
+            background: transparent;
+        }
 
         .header{background:var(--sb);border-bottom:1px solid var(--brd);padding:10px 15px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index: 20;}
         .main{display:flex;flex:1;overflow:hidden}
@@ -34,7 +45,7 @@
         .ch-item{background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:12px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:0.2s}
         .ch-item:hover{background:var(--hov)}
 
-        .player-container{flex:1;background:#000;position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;cursor: pointer;}
+        .player-container{flex:1;background:#000;position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center}
         #vid{width:100%;height:100%;display:none;background:#000}
         .welcome{text-align:center;z-index:1}
         
@@ -43,12 +54,16 @@
         @keyframes spin{to{transform:rotate(360deg)}}
     </style>
 </head>
-<body class="full-screen-mode"> <div class="header" id="header">
+<body class="full-screen-mode">
+
+    <div class="hover-trigger" onmouseenter="showUI()"></div>
+
+    <div class="header" id="header">
         <strong style="font-size:18px">📺 نظام القنوات التلقائي</strong>
         <span id="scanStatus" style="font-size:10px; color:var(--acc)">جاري فحص المجلد...</span>
     </div>
 
-    <div class="main">
+    <div class="main" onmouseleave="hideUI()">
         <div class="sidebar" id="sidebar"></div>
 
         <div class="ch-list" id="chList">
@@ -56,9 +71,9 @@
             <div id="channelsContainer"></div>
         </div>
 
-        <div class="player-container" id="playerContainer" onclick="toggleUI(event)">
+        <div class="player-container" id="playerContainer">
             <div id="loading"><div class="spinner"></div></div>
-            <div class="welcome" id="welcome"><h3>📡 انقر لإظهار القوائم واختر دولة</h3></div>
+            <div class="welcome" id="welcome"><h3>📡 حرك الفأرة لليمين لإظهار القنوات</h3></div>
             <video id="vid" controls autoplay playsinline></video>
         </div>
     </div>
@@ -77,11 +92,16 @@
     let currentChannels = [];
     let hls = null;
 
-    // وظيفة تبديل ظهور القوائم عند النقر
-    function toggleUI(e) {
-        // نتحقق أن النقرة ليست على عناصر التحكم بالفيديو نفسه
-        if (e.target.tagName !== 'VIDEO') {
-            document.body.classList.toggle('full-screen-mode');
+    // وظيفة إظهار القوائم
+    function showUI() {
+        document.body.classList.remove('full-screen-mode');
+    }
+
+    // وظيفة إخفاء القوائم
+    function hideUI() {
+        // نخفيها فقط إذا كان هناك فيديو يعمل (حتى لا تضيع الرسالة الترحيبية في البداية)
+        if (document.getElementById('vid').style.display === 'block') {
+            document.body.classList.add('full-screen-mode');
         }
     }
 
@@ -98,10 +118,7 @@
                     btn.className = 'cat-btn';
                     btn.style.display = 'block';
                     btn.innerHTML = `<span>${country.flag}</span><span>${country.name}</span>`;
-                    btn.onclick = (e) => {
-                        e.stopPropagation(); // منع اختفاء القائمة عند الضغط على الزر
-                        loadM3U(country.id, btn);
-                    };
+                    btn.onclick = () => loadM3U(country.id, btn);
                     sidebar.appendChild(btn);
                     count++;
                 }
@@ -149,10 +166,7 @@
             const div = document.createElement('div');
             div.className = 'ch-item';
             div.innerHTML = `<span>📺</span> <span>${ch.n}</span>`;
-            div.onclick = (e) => {
-                e.stopPropagation(); // منع التداخل مع نقرة الحاوية
-                play(ch.h);
-            };
+            div.onclick = () => play(ch.h);
             container.appendChild(div);
         });
     }
@@ -162,8 +176,8 @@
         document.getElementById('welcome').style.display = 'none';
         vid.style.display = 'block';
         
-        // إخفاء القوائم فور اختيار القناة لتصبح ملأ الشاشة
-        document.body.classList.add('full-screen-mode');
+        // إخفاء القوائم فور البدء
+        hideUI();
 
         if (hls) hls.destroy();
         if (Hls.isSupported()) {
