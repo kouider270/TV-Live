@@ -3,36 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KBN STREAM | البث السينمائي الاحترافي</title>
+    <title>KBN STREAM | Cinema Mode</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js"></script>
     <style>
         *{box-sizing:border-box;margin:0;padding:0}
         :root{
             --bg:#050a14;
-            --sb:rgba(10, 14, 26, 0.97);
+            --sb:rgba(10, 14, 26, 0.98);
             --card:rgba(22, 27, 41, 0.9);
-            --acc:#00d2ff; /* لون شعار KBN */
+            --acc:#00d2ff;
             --txt:#f0f0f0;
             --brd:rgba(255,255,255,0.1);
         }
         
-        body{background:#000;color:var(--txt);height:100vh;font-family:system-ui;overflow:hidden; cursor: default;}
+        body{background:#000;color:var(--txt);height:100vh;font-family:system-ui;overflow:hidden;}
 
-        /* شاشة الترحيب بالشعار */
+        /* شاشة الترحيب */
         #splash-screen {
             position: fixed; inset: 0; background: var(--bg);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             z-index: 10000; transition: opacity 1s ease, visibility 1s;
         }
-        .splash-logo { 
-            max-width: 500px; width: 80%; 
-            filter: drop-shadow(0 0 30px var(--acc)); 
-            animation: pulse 2s infinite ease-in-out; 
-        }
-        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.05); opacity: 1; } }
+        .splash-logo { max-width: 450px; width: 80%; filter: drop-shadow(0 0 30px var(--acc)); animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
         .fade-out { opacity: 0; visibility: hidden; }
 
-        /* مشغل الفيديو ملء الشاشة */
+        /* مشغل الفيديو */
         .player-container {
             position: fixed; inset: 0; width: 100%; height: 100%;
             background: #000; z-index: 1; display: flex; align-items: center; justify-content: center;
@@ -48,21 +44,28 @@
         }
         body.ui-visible .ui-overlay { opacity: 1; visibility: visible; pointer-events: auto; }
 
-        /* القوائم الجانبية (Slide Menus) */
+        /* القائمة الجانبية - تم تصحيحها لتظهر كل الدول */
         .sidebar {
-            width: 120px; background: var(--sb); backdrop-filter: blur(20px);
-            border-left: 1px solid var(--brd); display: flex; flex-direction: column;
-            gap: 12px; padding: 25px 10px; overflow-y: auto;
-            transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 130px; background: var(--sb); backdrop-filter: blur(20px);
+            border-left: 1px solid var(--brd); 
+            display: flex; flex-direction: column;
+            gap: 15px; padding: 100px 10px 30px 10px; /* ترك مساحة للهيدر */
+            overflow-y: auto; /* تفعيل التمرير */
+            height: 100vh;
+            transform: translateX(100%); transition: transform 0.4s ease;
         }
+        /* تحسين شكل شريط التمرير */
+        .sidebar::-webkit-scrollbar { width: 3px; }
+        .sidebar::-webkit-scrollbar-thumb { background: var(--acc); border-radius: 10px; }
+
         .ch-list {
-            width: 320px; background: rgba(15, 20, 35, 0.95); backdrop-filter: blur(25px);
-            border-left: 1px solid var(--brd); padding: 20px; overflow-y: auto;
-            transform: translateX(100%); transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 350px; background: rgba(15, 20, 35, 0.95); backdrop-filter: blur(25px);
+            border-left: 1px solid var(--brd); padding: 100px 20px 20px 20px;
+            overflow-y: auto; height: 100vh;
+            transform: translateX(100%); transition: transform 0.5s ease;
         }
         body.ui-visible .sidebar, body.ui-visible .ch-list { transform: translateX(0); }
 
-        /* الهيدر */
         .header {
             position: fixed; top: 0; right: 0; left: 0;
             background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
@@ -72,57 +75,45 @@
         body.ui-visible .header { transform: translateY(0); }
         .header-logo { height: 45px; filter: drop-shadow(0 0 10px var(--acc)); }
 
-        /* الأزرار والعناصر */
         .cat-btn {
             background: var(--card); border: 1px solid var(--brd); border-radius: 15px;
             padding: 15px 5px; text-align: center; cursor: pointer; transition: 0.3s;
-            color: #bbb;
+            flex-shrink: 0; /* منع انكماش الأزرار */
         }
-        .cat-btn:hover { border-color: var(--acc); color: #fff; }
-        .cat-btn.active { background: var(--acc); color: #000; font-weight: bold; border-color: #fff; }
+        .cat-btn:hover { border-color: var(--acc); }
+        .cat-btn.active { background: var(--acc); color: #000; font-weight: bold; }
         .cat-btn span { display: block; font-size: 11px; margin-top: 5px; }
 
         .search-box {
-            width: 100%; background: rgba(255,255,255,0.08); border: 1px solid var(--brd);
-            border-radius: 12px; padding: 14px; color: #fff; margin-bottom: 20px; outline: none;
+            width: 100%; background: rgba(255,255,255,0.1); border: 1px solid var(--brd);
+            border-radius: 12px; padding: 12px; color: #fff; margin-bottom: 20px; outline: none;
         }
         .ch-item {
             background: var(--card); border: 1px solid var(--brd); border-radius: 12px;
             padding: 16px; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 15px;
             transition: 0.2s;
         }
-        .ch-item:hover { background: var(--acc); color: #000; transform: scale(1.03); font-weight: bold; }
+        .ch-item:hover { background: var(--acc); color: #000; transform: scale(1.02); }
 
-        .welcome-msg { text-align: center; z-index: 2; pointer-events: none; }
-        .welcome-msg img { max-width: 300px; opacity: 0.2; margin-bottom: 20px; }
-
-        #loading { position: absolute; inset: 0; background: rgba(0,0,0,0.8); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 200; }
-        .spinner { width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--acc); border-radius: 50%; animation: spin 1s linear infinite; }
+        #loading { position: absolute; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 200; }
+        .spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.1); border-top-color: var(--acc); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body onclick="toggleUI()">
 
-    <!-- شاشة الترحيب -->
     <div id="splash-screen">
         <img src="logo.png" alt="KBN Logo" class="splash-logo">
-        <p style="margin-top:20px; color:var(--acc); letter-spacing:2px;">جاري تشغيل KBN STREAM...</p>
     </div>
 
     <div class="player-container">
         <div id="loading"><div class="spinner"></div></div>
-        <div class="welcome-msg" id="welcome">
-            <img src="logo.png" alt="KBN">
-            <h2 style="color:var(--acc)">انقر في أي مكان لإظهار قائمة القنوات</h2>
-        </div>
         <video id="vid" autoplay playsinline></video>
     </div>
 
     <div class="header">
         <img src="logo.png" alt="KBN" class="header-logo">
-        <div id="scanStatus" style="font-size:11px; padding:6px 15px; border-radius:20px; border:1px solid var(--acc); color:var(--acc)">
-            KBN CINEMA MODE
-        </div>
+        <div id="scanStatus" style="font-size:11px; color:var(--acc); border:1px solid var(--acc); padding:5px 15px; border-radius:20px;">متصل</div>
     </div>
 
     <div class="ui-overlay">
@@ -134,16 +125,15 @@
     </div>
 
 <script>
-    // إخفاء Splash Screen
     window.onload = () => {
-        setTimeout(() => document.getElementById('splash-screen').classList.add('fade-out'), 2500);
+        setTimeout(() => document.getElementById('splash-screen').classList.add('fade-out'), 2000);
         init();
     };
 
     let hls = null;
     let currentChannels = [];
 
-    // قائمة الدول المحدثة
+    // قائمة الدول كاملة
     const countries = [
         { id: 'dz', name: 'الجزائر', flag: '🇩🇿' },
         { id: 'sa', name: 'السعودية', flag: '🇸🇦' },
@@ -161,7 +151,7 @@
     async function init() {
         const sidebar = document.getElementById('sidebar');
         sidebar.innerHTML = "";
-        let found = 0;
+        let count = 0;
 
         for (const c of countries) {
             try {
@@ -172,23 +162,22 @@
                     btn.innerHTML = `<span>${c.flag}</span><span>${c.name}</span>`;
                     btn.onclick = (e) => { e.stopPropagation(); loadM3U(c.id, btn); };
                     sidebar.appendChild(btn);
-                    found++;
+                    count++;
                 }
             } catch(e) {}
         }
-        document.getElementById('scanStatus').innerText = `متصل | ${found} باقة متوفرة`;
+        document.getElementById('scanStatus').innerText = `الباقات المتوفرة: ${count}`;
     }
 
     async function loadM3U(id, btn) {
         document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         document.getElementById('loading').style.display = 'flex';
-        
         try {
             const res = await fetch(`streams/${id}.m3u`);
             const text = await res.text();
             parseM3U(text);
-        } catch(e) { alert("خطأ في تحميل الملف"); }
+        } catch(e) { console.error(e); }
         finally { document.getElementById('loading').style.display = 'none'; }
     }
 
@@ -219,7 +208,6 @@
 
     function play(url) {
         const vid = document.getElementById('vid');
-        document.getElementById('welcome').style.display = 'none';
         if (hls) hls.destroy();
         if (Hls.isSupported()) {
             hls = new Hls();
