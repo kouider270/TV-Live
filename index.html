@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KBN STREAM | Cinema Mode</title>
+    <title>KBN STREAM | TV Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js"></script>
     <style>
         *{box-sizing:border-box;margin:0;padding:0}
@@ -18,22 +18,12 @@
         
         body{background:#000;color:var(--txt);height:100vh;font-family:system-ui;overflow:hidden;}
 
-        /* شاشة الترحيب */
-        #splash-screen {
-            position: fixed; inset: 0; background: var(--bg);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 10000; transition: opacity 1s ease, visibility 1s;
-        }
-        .splash-logo { max-width: 450px; width: 80%; filter: drop-shadow(0 0 30px var(--acc)); animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-        .fade-out { opacity: 0; visibility: hidden; }
-
         /* مشغل الفيديو */
         .player-container {
             position: fixed; inset: 0; width: 100%; height: 100%;
             background: #000; z-index: 1; display: flex; align-items: center; justify-content: center;
         }
-        #vid { width: 100%; height: 100%; object-fit: contain; background: #000; cursor: pointer; }
+        #vid { width: 100%; height: 100%; object-fit: contain; }
 
         /* واجهة التحكم */
         .ui-overlay {
@@ -44,27 +34,38 @@
         }
         body.ui-visible .ui-overlay { opacity: 1; visibility: visible; pointer-events: auto; }
 
-        /* القائمة الجانبية - تم تصحيحها لتظهر كل الدول */
+        /* القائمة الجانبية المعدلة للتمرير */
         .sidebar {
-            width: 130px; background: var(--sb); backdrop-filter: blur(20px);
+            width: 140px; background: var(--sb); backdrop-filter: blur(20px);
             border-left: 1px solid var(--brd); 
-            display: flex; flex-direction: column;
-            gap: 15px; padding: 100px 10px 30px 10px; /* ترك مساحة للهيدر */
-            overflow-y: auto; /* تفعيل التمرير */
-            height: 100vh;
+            display: flex; flex-direction: column; gap: 15px; 
+            padding: 100px 10px 30px; overflow-y: auto; height: 100vh;
             transform: translateX(100%); transition: transform 0.4s ease;
         }
-        /* تحسين شكل شريط التمرير */
-        .sidebar::-webkit-scrollbar { width: 3px; }
-        .sidebar::-webkit-scrollbar-thumb { background: var(--acc); border-radius: 10px; }
 
         .ch-list {
-            width: 350px; background: rgba(15, 20, 35, 0.95); backdrop-filter: blur(25px);
-            border-left: 1px solid var(--brd); padding: 100px 20px 20px 20px;
+            width: 380px; background: rgba(15, 20, 35, 0.95); backdrop-filter: blur(25px);
+            border-left: 1px solid var(--brd); padding: 100px 20px 20px;
             overflow-y: auto; height: 100vh;
             transform: translateX(100%); transition: transform 0.5s ease;
         }
         body.ui-visible .sidebar, body.ui-visible .ch-list { transform: translateX(0); }
+
+        /* الأزرار - تعديل حالة التركيز (Focus) للريموت */
+        .cat-btn, .ch-item {
+            background: var(--card); border: 1px solid var(--brd); border-radius: 12px;
+            padding: 15px; cursor: pointer; transition: 0.2s; outline: none;
+            flex-shrink: 0;
+        }
+
+        /* أهم جزء: تأثير "الوقوف" بالريموت */
+        .cat-btn:focus, .ch-item:focus {
+            background: var(--acc) !important;
+            color: #000 !important;
+            transform: scale(1.08);
+            border: 3px solid #fff; /* إطار أبيض واضح جداً لمستخدم التلفاز */
+            box-shadow: 0 0 20px var(--acc);
+        }
 
         .header {
             position: fixed; top: 0; right: 0; left: 0;
@@ -73,38 +74,13 @@
             z-index: 110; transform: translateY(-100%); transition: transform 0.4s ease;
         }
         body.ui-visible .header { transform: translateY(0); }
-        .header-logo { height: 45px; filter: drop-shadow(0 0 10px var(--acc)); }
-
-        .cat-btn {
-            background: var(--card); border: 1px solid var(--brd); border-radius: 15px;
-            padding: 15px 5px; text-align: center; cursor: pointer; transition: 0.3s;
-            flex-shrink: 0; /* منع انكماش الأزرار */
-        }
-        .cat-btn:hover { border-color: var(--acc); }
-        .cat-btn.active { background: var(--acc); color: #000; font-weight: bold; }
-        .cat-btn span { display: block; font-size: 11px; margin-top: 5px; }
-
-        .search-box {
-            width: 100%; background: rgba(255,255,255,0.1); border: 1px solid var(--brd);
-            border-radius: 12px; padding: 12px; color: #fff; margin-bottom: 20px; outline: none;
-        }
-        .ch-item {
-            background: var(--card); border: 1px solid var(--brd); border-radius: 12px;
-            padding: 16px; margin-bottom: 12px; cursor: pointer; display: flex; align-items: center; gap: 15px;
-            transition: 0.2s;
-        }
-        .ch-item:hover { background: var(--acc); color: #000; transform: scale(1.02); }
 
         #loading { position: absolute; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 200; }
-        .spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.1); border-top-color: var(--acc); border-radius: 50%; animation: spin 1s linear infinite; }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--acc); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body onclick="toggleUI()">
-
-    <div id="splash-screen">
-        <img src="logo.png" alt="KBN Logo" class="splash-logo">
-    </div>
 
     <div class="player-container">
         <div id="loading"><div class="spinner"></div></div>
@@ -112,28 +88,18 @@
     </div>
 
     <div class="header">
-        <img src="logo.png" alt="KBN" class="header-logo">
-        <div id="scanStatus" style="font-size:11px; color:var(--acc); border:1px solid var(--acc); padding:5px 15px; border-radius:20px;">متصل</div>
+        <h2 style="color:var(--acc)">KBN STREAM TV</h2>
+        <div id="scanStatus" style="font-size:12px; color:#fff;">التحكم متاح بالريموت</div>
     </div>
 
     <div class="ui-overlay">
         <div class="sidebar" id="sidebar" onclick="event.stopPropagation()"></div>
         <div class="ch-list" id="chList" onclick="event.stopPropagation()">
-            <input type="text" class="search-box" id="search" placeholder="بحث عن قناة..." oninput="displayChannels()">
             <div id="channelsContainer"></div>
         </div>
     </div>
 
 <script>
-    window.onload = () => {
-        setTimeout(() => document.getElementById('splash-screen').classList.add('fade-out'), 2000);
-        init();
-    };
-
-    let hls = null;
-    let currentChannels = [];
-
-    // قائمة الدول كاملة
     const countries = [
         { id: 'dz', name: 'الجزائر', flag: '🇩🇿' },
         { id: 'sa', name: 'السعودية', flag: '🇸🇦' },
@@ -145,39 +111,47 @@
         { id: 'be', name: 'بلجيكا', flag: '🇧🇪' }
     ];
 
-    function toggleUI() { document.body.classList.toggle('ui-visible'); }
-    function hideUI() { document.body.classList.remove('ui-visible'); }
+    let hls = null;
+    let currentChannels = [];
+
+    window.onload = init;
+
+    function toggleUI() { 
+        document.body.classList.toggle('ui-visible'); 
+        if(document.body.classList.contains('ui-visible')) {
+            // توجيه التركيز لأول زر عند فتح القائمة
+            setTimeout(() => {
+                const firstBtn = document.querySelector('.cat-btn');
+                if(firstBtn) firstBtn.focus();
+            }, 100);
+        }
+    }
 
     async function init() {
         const sidebar = document.getElementById('sidebar');
         sidebar.innerHTML = "";
-        let count = 0;
-
         for (const c of countries) {
             try {
                 const res = await fetch(`streams/${c.id}.m3u`, { method: 'HEAD' });
                 if (res.ok) {
                     const btn = document.createElement('div');
                     btn.className = 'cat-btn';
-                    btn.innerHTML = `<span>${c.flag}</span><span>${c.name}</span>`;
+                    btn.setAttribute('tabindex', '0'); // ضروري للريموت
+                    btn.innerHTML = `<span>${c.flag}</span><br><span>${c.name}</span>`;
                     btn.onclick = (e) => { e.stopPropagation(); loadM3U(c.id, btn); };
                     sidebar.appendChild(btn);
-                    count++;
                 }
             } catch(e) {}
         }
-        document.getElementById('scanStatus').innerText = `الباقات المتوفرة: ${count}`;
     }
 
     async function loadM3U(id, btn) {
-        document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
         document.getElementById('loading').style.display = 'flex';
         try {
             const res = await fetch(`streams/${id}.m3u`);
             const text = await res.text();
             parseM3U(text);
-        } catch(e) { console.error(e); }
+        } catch(e) {}
         finally { document.getElementById('loading').style.display = 'none'; }
     }
 
@@ -195,15 +169,17 @@
 
     function displayChannels() {
         const container = document.getElementById('channelsContainer');
-        const q = document.getElementById('search').value.toLowerCase();
         container.innerHTML = '';
-        currentChannels.filter(c => c.n.toLowerCase().includes(q)).forEach(ch => {
+        currentChannels.forEach(ch => {
             const div = document.createElement('div');
             div.className = 'ch-item';
+            div.setAttribute('tabindex', '0'); // ضروري للريموت
             div.innerHTML = `<b>▶</b> <span>${ch.n}</span>`;
             div.onclick = (e) => { e.stopPropagation(); play(ch.h); };
             container.appendChild(div);
         });
+        // التركيز على أول قناة في القائمة بعد التحميل
+        if(container.firstChild) container.firstChild.focus();
     }
 
     function play(url) {
@@ -214,12 +190,43 @@
             hls.loadSource(url);
             hls.attachMedia(vid);
             hls.on(Hls.Events.MANIFEST_PARSED, () => vid.play());
-        } else {
-            vid.src = url;
-            vid.play();
-        }
-        hideUI();
+        } else { vid.src = url; vid.play(); }
+        document.body.classList.remove('ui-visible');
     }
+
+    // --- نظام التحكم بالريموت ---
+    document.addEventListener('keydown', (e) => {
+        const active = document.activeElement;
+        
+        switch(e.key) {
+            case 'Enter': // زر OK في الريموت
+                active.click();
+                break;
+            case 'ArrowDown':
+                const next = active.nextElementSibling;
+                if(next) next.focus();
+                break;
+            case 'ArrowUp':
+                const prev = active.previousElementSibling;
+                if(prev) prev.focus();
+                break;
+            case 'ArrowLeft': // الانتقال من القنوات إلى الباقات
+                const sidebarBtn = document.querySelector('.cat-btn');
+                if(sidebarBtn) sidebarBtn.focus();
+                break;
+            case 'ArrowRight': // الانتقال من الباقات إلى القنوات
+                const channelBtn = document.querySelector('.ch-item');
+                if(channelBtn) channelBtn.focus();
+                break;
+            case 'Backslash':
+            case 'Backspace':
+            case 'Escape': // زر الرجوع في الريموت
+                if(document.body.classList.contains('ui-visible')) {
+                    document.body.classList.remove('ui-visible');
+                }
+                break;
+        }
+    });
 </script>
 </body>
 </html>
